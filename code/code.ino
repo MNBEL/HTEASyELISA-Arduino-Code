@@ -17,10 +17,10 @@ boolean newData = false;      //new data comes in flag
 int freqCom = 0;              //store the frequency setting from PC
 int ch = 0;                   //store the channel setting from PC
 boolean newMeasurement = false;           //flag: recieved new setting, need measurement
-float start_freq = 8 * pow(10, 4);        // Set start freq, < 100Khz
+float start_freq = 8 * pow(10, 4);        // Set start freq, < 100kHz, 80kHz
 const float MCLK = 16.776 * pow(10, 6);   // AD5933 Internal Clock Speed 16.776 MHz
-const float incre_freq = 1 * pow(10, 4);  // Set freq increment, useless when repeat frequency
-const int incre_num = 4;                 // Set number of increments or repeat; < 511
+const float incre_freq = 1 * pow(10, 4);  // Set freq increment, useless when repeat frequency, 10kHz
+const int incre_num = 4;                 // Set number of increments or repeat; < 511, so scan is from 80 to 120 kHz
 
 //Variables: rawdata return to serial port
 
@@ -31,31 +31,32 @@ int LoadIm = 0;
 
 
 //Macros: AD5933
+// Maps register addresses, bus addresses, and commands to names for the AD5933
 
-#define AD5933_ADDRE      0x0D
-#define AD5933_PTR        0xB0
-#define CTRL_AD5933       0x80 // address arduino
+#define AD5933_ADDRE      0x0D // default serial bus address
+#define AD5933_PTR        0xB0 // command to set the address pointer
+#define CTRL_AD5933       0x80 // control mode register address
 #define CTRL2_AD5933      0x81
-#define START_FREQ_R1     0x82
+#define START_FREQ_R1     0x82 // start frequency register address
 #define START_FREQ_R2     0x83
 #define START_FREQ_R3     0x84
-#define FREG_INCRE_R1     0x85
+#define FREG_INCRE_R1     0x85 // register address of the increment frequency
 #define FREG_INCRE_R2     0x86
 #define FREG_INCRE_R3     0x87
-#define NUM_INCRE_R1      0x88
+#define NUM_INCRE_R1      0x88 // register address of the number of increments
 #define NUM_INCRE_R2      0x89
-#define NUM_SCYCLES_R1    0x8A
+#define NUM_SCYCLES_R1    0x8A // register address of the number of settling cycles before any impedance measurement
 #define NUM_SCYCLES_R2    0x8B
-#define TEMP_R1           0x92
+#define TEMP_R1           0x92 // register address of temperature
 #define TEMP_R2           0x93
-#define RE_DATA_R1        0x94
+#define RE_DATA_R1        0x94 // register address for real data
 #define RE_DATA_R2        0x95
-#define IMG_DATA_R1       0x96
+#define IMG_DATA_R1       0x96 // register address for imaginary data
 #define IMG_DATA_R2       0x97
-#define STATUS_AD5933     0x8F
+#define STATUS_AD5933     0x8F // register address for the status register
 
 //Macros: micro pump
-
+// Are we still using this? or can it be removed?
 #define MP6_ADDR          0x7B
 #define PIN_TASTER        3
 #define PIN_LED           13
@@ -91,12 +92,24 @@ int mode = 0;
 //#define ADG715_ADDRb 0x49 // changed names to ...ADDRa/b/c as ADDR arrays are named as ADDR1/2
 //#define ADG715_ADDRc 0x50 
 // array declarations for channels and switch codes
+
+// addresses is 10010 + A1 + A0 bits from the pins + a R/W bit (1/0)
+// Josiah is confused on these
 uint8_t ADG715_ADDR1[96] = {0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x48,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49,0x49};
 uint8_t ADG715_ADDR2[96] = {0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49,0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49,0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49,0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49,0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49,0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49,0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49,0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49,0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49,0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49,0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49,0x50,0x50,0x50,0x50,0x50,0x49,0x49,0x49}; 
+// 1 S1
+// 2 S2
+// 4 S3
+// 8 S4
+// 16 S5
+// 32 S6
+// 64 S7
+// 128 S8
 uint8_t swCode1[96] = { 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32, 32, 32, 32, 32, 64, 64, 64, 64, 64, 64, 64, 64, 128, 128, 128, 128, 128, 128, 128, 128, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16, 16, 16};
 uint8_t swCode2[96] = { 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32, 16, 8, 4, 2, 1, 128, 64, 32};
 
 void setup() {
+  // does this set the clock for I2C, not the one for frequency generation, I beleive?
   Wire.setClock(1600000);
   Wire.begin();
   Serial.begin(115200);
@@ -215,6 +228,7 @@ void ImpedanceMeasure(int sFreq, int Channel) {
   minImg = 0;
   sumRe = 0;
   sumImg = 0;
+  // What is this doing?
   do  {
     fAD5933Status = readData_AD5933(STATUS_AD5933) & 2; // measuring Rcal
   } while (fAD5933Status != 2);      //wait until results are ready
@@ -233,6 +247,7 @@ void ImpedanceMeasure(int sFreq, int Channel) {
   minImg = 0;
   sumRe = 0;
   sumImg = 0;
+  // What is this doing?
   do  {
     fAD5933Status = readData_AD5933(STATUS_AD5933) & 2;
   } while (fAD5933Status != 2);      //wait until results are ready
@@ -243,6 +258,7 @@ void ImpedanceMeasure(int sFreq, int Channel) {
   Serial.write(sendBuf, 10);
 }
 
+// give this a return statement instead of global
 void recvBytesWithStartEndMarkers() {
   static boolean recvInProgress = false;
   static byte ndx = 0;    //number of bytes recieved
@@ -276,6 +292,7 @@ void recvBytesWithStartEndMarkers() {
   }
 }
 
+// not sure what this does
 void showNewData() {
   if (newData == true) {
     switch (receivedBytes[0]) {
@@ -365,6 +382,7 @@ void meansureInit(int sFreq) {
   //return res;
 }
 
+// implements the conversion from base 10 to the AD5933 code. What's 'n' for?
 byte getFrequency(float freq, int n) {
   long val = long((freq / (MCLK / 4)) * pow(2, 27));
   byte code;
@@ -372,6 +390,7 @@ byte getFrequency(float freq, int n) {
   return code;
 }
 
+// these look ease enough
 void writeData_AD5933(int addr, int data) {
   Wire.beginTransmission(AD5933_ADDRE);
   Wire.write(addr);
