@@ -1,0 +1,5 @@
+chip_name_1, pin_number, switch_number, chip_name_2, pin_number, address
+
+U1, 1, S12, U4, 24, 00011001
+U1, 3, S10, U4, 22, 01100110
+U1, 40, S32, U4, 16, 01000100
