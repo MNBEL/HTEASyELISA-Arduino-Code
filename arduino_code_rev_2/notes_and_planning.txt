@@ -1,6 +1,0 @@
-So... what all is there to do here...
-
-1) what are the parts?
--
-
-First, I need to get get github to work nicely with my folder system

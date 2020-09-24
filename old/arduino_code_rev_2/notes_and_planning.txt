@@ -1,0 +1,26 @@
+
+1) read a value from the PModIA
+- check with Sarkar on pinout
+- I need to know the exact order and requirement of how to read from the
+PModIA, based on the AD5933 datasheet... or look through the old code?
+let's stick with the datasheet for now
+- 1) enter standby mode by issuing standby command to control register
+- 1.5) program a frequency to start at. Let's do 1 kHz okay
+- 1.75) set the other parameters for the frequency sweep
+- 2) enter initialize mode by issuing an initialize with start frequency
+     command to control register. This allows for setting time before
+     freq. sweep
+
+So great, I'm getting some data, now let's see if it's the right data
+2) convert to conventional values
+- 1) what is the equation to go from return to ohms? any calibration?
+- 2) The current to voltage amplifier is a 20kOhm on the PModIA
+     I believe that the calibration is one chosen by user
+     Let's try a 10k cal. with 20k gain, and then test against a 20k cal.
+
+So, numbers look like it might be doing what I want. Now let's verify
+Let's read some data sheet to see what I should be calibrating with.
+I know the 4 to 5 is a 20kOhm
+
+So... there's a whole bloody library for the PModIA that I missed...
+Let's start from the beginning an check it out 
