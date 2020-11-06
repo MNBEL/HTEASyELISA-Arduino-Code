@@ -6,7 +6,8 @@
 IA ia(5); // PModIA, fbr select pin as argument
 Multiplexer multiplexer{2, 3, 4}; // Multiplexer, sync pins as argument
 
-int freq = 10000;
+unsigned long freq = 10000;
+int well = 2;
 void setup() {
   Serial.begin(38400);
   multiplexer.initiate_communication();
@@ -16,6 +17,7 @@ void setup() {
   ia.setRangeParameters(pga, fbr, vpp);
   ia.ReadTPC(0, 10, 20, 30, 40);
   ia.setSweepParameters(freq, 0, 1, 10, 1);
+  multiplexer.select_electrode(well);
 }
 
 int begin = 0;
@@ -27,17 +29,19 @@ void loop(){
       break;
     }
   }
-  begin = 0;
-    for (int i = 1; i <= 96; i++){
-      multiplexer.select_electrode(i);
-      ia.BeginFrequencySweep();
-      ia.ApplyTwoPointCal(freq);
-      Serial.print(i);
-      Serial.print(", ");
-      Serial.print(freq);
-      Serial.print(", ");
-      Serial.print(ia.getImpedance());
-      Serial.print(", ");
-      Serial.println(ia.getPhase());
+
+  for (float logfreq = 3.7; logfreq <= 4.98; logfreq += 0.0128){
+    freq = pow(10, logfreq);
+    ia.setSweepParameters(freq, 0, 1, 10, 1);
+    ia.BeginFrequencySweep();
+    ia.ApplyTwoPointCal(freq);
+    Serial.print(well);
+    Serial.print(" ");
+    Serial.print(freq);
+    Serial.print(" ");
+    Serial.print(ia.getImpedance());
+    Serial.print(" ");
+    Serial.println(ia.getPhase());
   }
+  begin = 0;
 }

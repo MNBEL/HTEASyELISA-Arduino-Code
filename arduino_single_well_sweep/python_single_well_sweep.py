@@ -9,6 +9,7 @@ import serial
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
 
 # Well object to create well list
 class Well:
@@ -35,18 +36,13 @@ class Well:
 
 ser = serial.Serial('COM3', 38400)
 
-wells = []
-for i in range(1, 97, 1):
-    wells.append(Well(i))
-
-impedances_mapped = np.zeros((12,8))
-phases_mapped = np.zeros((12,8))
+well_number = 7
+well = Well(well_number)
 
 num = 0
 freq = 0
 imp = 0
 phase = 0
-nums = {}
 length_check = 1
 while (length_check):
     while not ser.in_waiting:
@@ -55,17 +51,13 @@ while (length_check):
     try:
         b = ser.readline()
         string = b.decode()
-        fields = string.split(",")
+        fields = string.split()
         num = int(fields[0])
         freq = float(fields[1])
         imp = float(fields[2])
         phase = float(fields[3])
-        # check if well has already been read, if so then assume all wells 
-        # have been read
-        if not (num in nums):
-            wells[num - 1].add_point(freq, imp, phase)
-            # nums[num] = 0 ???
-            nums[num - 1] = num
+        if not (freq in well.frequencies):
+            well.add_point(freq, imp, phase)
         else:
             length_check = 0
     except:
@@ -74,30 +66,14 @@ while (length_check):
 ser.close()
 
 # used to convert relevant well attributes into array form for plotting
-impedances = []
-phases = []
-# create 12 by 8 array
-for well in wells:
-    impedances.append(well.impedances[0])
-    phases.append(well.phases[0])
-impedances_mapped = np.array(impedances)
-impedances_mapped = np.resize(impedances_mapped, (12,8))
-phases_mapped = np.array(phases)
-phases_mapped = np.resize(phases_mapped, (12, 8))
-print(impedances_mapped)
-print(phases_mapped)
+frequencies = np.transpose(np.asarray(well.frequencies))
+impedances = np.transpose(np.asarray(well.impedances))
 
-# plots as heatmap... could use some better formatting with
-# DC of colorbar at 0... also easier to read numbering
+with open('output_filename.csv', 'w', newline='') as output_file:
+    writer = csv.writer(output_file, delimiter=',')
+    for i, frequency in enumerate(frequencies):
+        writer.writerow([frequency, impedances[i]])
+
 fig, ax = plt.subplots(figsize=(20,10))
-ax.set_xticks(np.arange(8))
-ax.set_yticks(np.arange(12))
-im = ax.imshow(impedances_mapped)
-fig.colorbar(im)
-for i in range(12):
-    for j in range(8):
-        text = "{:2.2e}".format(impedances_mapped[i, j])
-        ax.text(j, i, text, color='w', fontsize=8, ha="center", va="center")
+ax.plot(frequencies, impedances)
 
-np.savetxt('impedance_data.csv', impedances_mapped, delimiter=',')
-np.savetxt('phase_data', phases_mapped, delimiter=',')

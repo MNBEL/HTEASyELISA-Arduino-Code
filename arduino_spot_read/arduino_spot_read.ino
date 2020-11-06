@@ -6,7 +6,8 @@
 IA ia(5); // PModIA, fbr select pin as argument
 Multiplexer multiplexer{2, 3, 4}; // Multiplexer, sync pins as argument
 
-int freq = 10000;
+unsigned long freq = 10000;
+int well = 2;
 void setup() {
   Serial.begin(38400);
   multiplexer.initiate_communication();
@@ -16,28 +17,24 @@ void setup() {
   ia.setRangeParameters(pga, fbr, vpp);
   ia.ReadTPC(0, 10, 20, 30, 40);
   ia.setSweepParameters(freq, 0, 1, 10, 1);
+  multiplexer.select_electrode(well);
 }
 
-int begin = 0;
-void loop(){
-  while(begin == 0){
-    while (Serial.available()){
-      Serial.readString();
-      begin = 1;
-      break;
+String inString = "";    // string to hold input
+void loop() {
+  // Read serial input:
+  while (Serial.available() > 0) {
+    int inChar = Serial.read();
+    if (isDigit(inChar)) {
+      // convert the incoming byte to a char and add it to the string:
+      inString += (char)inChar;
     }
-  }
-  begin = 0;
-    for (int i = 1; i <= 96; i++){
-      multiplexer.select_electrode(i);
-      ia.BeginFrequencySweep();
-      ia.ApplyTwoPointCal(freq);
-      Serial.print(i);
-      Serial.print(", ");
-      Serial.print(freq);
-      Serial.print(", ");
-      Serial.print(ia.getImpedance());
-      Serial.print(", ");
-      Serial.println(ia.getPhase());
+    // if you get a newline, print the string, then the string's value:
+    if (inChar == '\n') {
+      well = inString.toInt();
+      Serial.println(well);
+      multiplexer.select_electrode(well);
+      inString = "";
+    }
   }
 }
