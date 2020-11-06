@@ -9,6 +9,7 @@ import serial
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
 
 # Well object to create well list
 class Well:
@@ -33,7 +34,7 @@ class Well:
         self.impedances.append(impedance)
         self.phases.append(phase)
 
-ser = serial.Serial('COM5', 38400)
+ser = serial.Serial('COM3', 38400)
 
 well_number = 7
 well = Well(well_number)
@@ -61,12 +62,18 @@ while (length_check):
             length_check = 0
     except:
         ser.close()
-        ser = serial.Serial('COM5', 38400)
+        ser = serial.Serial('COM3', 38400)
 ser.close()
 
 # used to convert relevant well attributes into array form for plotting
-impedances = []
-phases = []
+frequencies = np.transpose(np.asarray(well.frequencies))
+impedances = np.transpose(np.asarray(well.impedances))
+
+with open('output_filename.csv', 'w', newline='') as output_file:
+    writer = csv.writer(output_file, delimiter=',')
+    for i, frequency in enumerate(frequencies):
+        writer.writerow([frequency, impedances[i]])
 
 fig, ax = plt.subplots(figsize=(20,10))
-ax.plot(well.frequencies, well.impedances)
+ax.plot(frequencies, impedances)
+
