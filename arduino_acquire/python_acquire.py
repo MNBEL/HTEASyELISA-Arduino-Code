@@ -96,3 +96,6 @@ for i in range(12):
     for j in range(8):
         text = "{:2.2e}".format(impedances_mapped[i, j])
         ax.text(j, i, text, color='w', fontsize=8, ha="center", va="center")
+
+np.savetxt('impedance_data.csv', impedances_mapped, delimiter=',')
+np.savetxt('phase_data', phases_mapped, delimiter=',')
