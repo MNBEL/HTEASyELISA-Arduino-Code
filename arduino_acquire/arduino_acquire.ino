@@ -2,13 +2,15 @@
 #include "well_addresses.h" // adg switch codes... this could belong to the multiplexer class...
 #include "PModIA.h" // interface for PModIA
 #include "Multiplexer.h" // made up of three ADG's
+#include "SoftwareSerial.h" // communicate with bluetooth
 
 IA ia(5); // PModIA, fbr select pin as argument
 Multiplexer multiplexer{2, 3, 4}; // Multiplexer, sync pins as argument
 
 int freq = 10000;
+SoftwareSerial BT(0, 1); // RX | TX
 void setup() {
-  Serial.begin(38400);
+  BT.begin(9600);
   multiplexer.initiate_communication();
   int pga = 1; // pga 1 x1, 2 x5
   int fbr = 2; // rfb 1 20, 2 100K
@@ -21,23 +23,43 @@ void setup() {
 int begin = 0;
 void loop(){
   while(begin == 0){
-    while (Serial.available()){
-      Serial.readString();
+    while (BT.readString()){
       begin = 1;
       break;
     }
   }
   begin = 0;
-    for (int i = 1; i <= 96; i++){
-      multiplexer.select_electrode(i);
+  String message = "[";
+  sendBT(message);
+  
+  for (int j = 0; j <=7; j++){
+    message="";
+    int index;
+    for (int i = 1; i <=12; i++){
+      index = j * 12 + i;
+      multiplexer.select_electrode(index);
       ia.BeginFrequencySweep();
       ia.ApplyTwoPointCal(freq);
-      Serial.print(i);
-      Serial.print(", ");
-      Serial.print(freq);
-      Serial.print(", ");
-      Serial.print(ia.getImpedance());
-      Serial.print(", ");
-      Serial.println(ia.getPhase());
+      message += index;
+      message += ",";
+      message += freq;
+      message += ",";
+      message += ia.getImpedance();
+      message += ",";
+      message += ia.getPhase();
+      message += ",";
+    }
+    sendBT(message); //sends data for 12 samples
   }
+    
+  message = "]";
+  sendBT(message);  
+}
+
+//method to send data via bluetooth
+void sendBT(String message){
+  int len = message.length()+1;
+  char sending[len];
+  message.toCharArray(sending, len);
+  BT.write(sending);
 }
