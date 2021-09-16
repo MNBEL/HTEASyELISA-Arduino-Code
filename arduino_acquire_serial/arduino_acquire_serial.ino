@@ -22,25 +22,27 @@ void setup() {
 int begin = 0;
 void loop(){
   delay(200);
-//  while(begin == 0){
-//    while (Serial.available()){
-//      Serial.readString();
-//      begin = 1;
-//      break;
-//    }
-//  }
-//  begin = 0;
+  while(begin == 0){
+    while (Serial.available()){
+      Serial.readString();
+      begin = 1;
+      break;
+    }
+  }
+  begin = 0;
+  Serial.print('[');
   for (int i = 1; i <= 4; i++){
     multiplexer.select_electrode(i);
     ia.BeginFrequencySweep();
     ia.ApplyTwoPointCal(freq);
     Serial.print(i);
-    Serial.print(" ");
+    Serial.print(",");
     Serial.print(freq);
-    Serial.print(" ");
+    Serial.print(",");
     Serial.print(ia.getImpedance());
-    Serial.print(" ");
+    Serial.print(",");
     Serial.print(ia.getPhase());
-    Serial.println();
+    Serial.print(",");
   }
+  Serial.print(']');
 }
