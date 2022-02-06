@@ -31,7 +31,7 @@ void loop(){
   }
   begin = 0;
   Serial.print('[');
-  for (int i = 1; i <= 4; i++){
+  for (int i = 1; i <= 96; i++){
     multiplexer.select_electrode(i);
     ia.BeginFrequencySweep();
     ia.ApplyTwoPointCal(freq);
@@ -44,5 +44,5 @@ void loop(){
     Serial.print(ia.getPhase());
     Serial.print(",");
   }
-  Serial.print(']');
+  Serial.println(']');
 }

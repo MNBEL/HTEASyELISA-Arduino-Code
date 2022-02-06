@@ -33,7 +33,7 @@ class Well:
         self.impedances.append(impedance)
         self.phases.append(phase)
 
-ser = serial.Serial('COM3', 38400)
+ser = serial.Serial('COM4', 38400)
 
 wells = []
 for i in range(1, 97, 1):
@@ -50,10 +50,11 @@ nums = {}
 length_check = 1
 while (length_check):
     while not ser.in_waiting:
-        ser.write(b'0')
+        ser.write(b'a')
         time.sleep(1)
     try:
         b = ser.readline()
+        print(b)
         string = b.decode()
         fields = string.split(",")
         num = int(fields[0])
@@ -66,11 +67,13 @@ while (length_check):
             wells[num - 1].add_point(freq, imp, phase)
             # nums[num] = 0 ???
             nums[num - 1] = num
+            print(num)
         else:
             length_check = 0
+            break
     except:
         ser.close()
-        ser = serial.Serial('COM3', 38400)
+        ser = serial.Serial('COM4', 38400)
 ser.close()
 
 # used to convert relevant well attributes into array form for plotting
