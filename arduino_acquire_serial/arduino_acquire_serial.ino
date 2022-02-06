@@ -44,5 +44,5 @@ void loop(){
     Serial.print(ia.getPhase());
     Serial.print(",");
   }
-  Serial.println(']');
+  Serial.println(']'); // need line ending here so we can use readline on other side
 }

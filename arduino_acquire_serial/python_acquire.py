@@ -9,6 +9,8 @@ import serial
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 # Well object to create well list
 class Well:
@@ -47,60 +49,42 @@ freq = 0
 imp = 0
 phase = 0
 nums = {}
-length_check = 1
-while (length_check):
+recieved = 0
+while not recieved:
     while not ser.in_waiting:
         ser.write(b'a')
         time.sleep(1)
     try:
         b = ser.readline()
+        recieved = 1
         print(b)
-        string = b.decode()
-        fields = string.split(",")
-        num = int(fields[0])
-        freq = float(fields[1])
-        imp = float(fields[2])
-        phase = float(fields[3])
-        # check if well has already been read, if so then assume all wells 
-        # have been read
-        if not (num in nums):
-            wells[num - 1].add_point(freq, imp, phase)
-            # nums[num] = 0 ???
-            nums[num - 1] = num
-            print(num)
-        else:
-            length_check = 0
-            break
     except:
         ser.close()
         ser = serial.Serial('COM4', 38400)
 ser.close()
 
-# used to convert relevant well attributes into array form for plotting
-impedances = []
-phases = []
-# create 12 by 8 array
-for well in wells:
-    impedances.append(well.impedances[0])
-    phases.append(well.phases[0])
-impedances_mapped = np.array(impedances)
-impedances_mapped = np.resize(impedances_mapped, (12,8))
-phases_mapped = np.array(phases)
-phases_mapped = np.resize(phases_mapped, (12, 8))
-print(impedances_mapped)
-print(phases_mapped)
+b = b.decode()
+b = b.replace('\r\n', '') # remove endline
+if b[0] == '[' and b[-1] == ']':
+    print('seems good')
+b = b[1:-2]
+b = b.split(',')
 
-# plots as heatmap... could use some better formatting with
-# DC of colorbar at 0... also easier to read numbering
-fig, ax = plt.subplots(figsize=(20,10))
-ax.set_xticks(np.arange(8))
-ax.set_yticks(np.arange(12))
-im = ax.imshow(impedances_mapped)
-fig.colorbar(im)
-for i in range(12):
-    for j in range(8):
-        text = "{:2.2e}".format(impedances_mapped[i, j])
-        ax.text(j, i, text, color='w', fontsize=8, ha="center", va="center")
+b_array = np.array(b, dtype='float')
+b_array = np.reshape(b_array, (int(len(b_array)/4), 4))
+frame = pd.DataFrame(data=b_array, columns=['Well', 'Freq', 'Imp', 'Phi'])
+frame = frame.astype({'Well': 'int'})
 
-np.savetxt('impedance_data.csv', impedances_mapped, delimiter=',')
-np.savetxt('phase_data', phases_mapped, delimiter=',')
+impedances = np.reshape(np.array(frame['Imp']), (12,8)) # not sure why this is akward
+nums = np.reshape(np.array(frame['Well']), (12,8))
+
+fig, ax = plt.subplots()
+sns.heatmap(impedances, linewidths=1, linecolor='w', square=True, ax=ax, cbar_kws={'label': 'Impedance (Z)'})
+sns.heatmap(nums, square=True, ax=ax, annot=True, alpha=0, annot_kws={'color':'w'}, cbar=False, xticklabels=False, yticklabels=False)
+fig.tight_layout()
+plt.show()
+
+fig.savefig('C:/Users/josia/Desktop/fig', bbox_inches='tight')
+
+# np.savetxt('impedance_data.csv', impedances_mapped, delimiter=',')
+# np.savetxt('phase_data', phases_mapped, delimiter=',')
