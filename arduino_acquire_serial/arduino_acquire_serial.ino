@@ -1,5 +1,5 @@
 //#include "Wire.h" // serial communication to ADG
-#include "well_addresses_4_well.h" // adg switch codes... this could belong to the multiplexer class...
+#include "well_addresses_96_well.h" // adg switch codes... this could belong to the multiplexer class...
 #include "PModIA.h" // interface for PModIA
 #include "Multiplexer.h" // made up of three ADG's
 //#include "SoftwareSerial.h" // communicate with bluetooth
